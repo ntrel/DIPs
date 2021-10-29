@@ -49,7 +49,7 @@ const override pure @safe:
 `ImprovedObject` may be defined in user code (or even in the core runtime library) and inherited from in all user-defined classes in a project for a better experience. However, `ImprovedObject` still has a number of issues:
 * The hidden member `__mutex`, needed for `synchronized` sections of code, is still present whether it is used or not. The standard library uses `synchronized` for 6 class types out of the over 70 classes it introduces. At best, the mutex would be opt-in.
 * The `toString` method cannot be implemented meaningfully if `@nogc` is required for it. This is because of its signature—constructing a `string` and returning it will often create garbage by necessity. A better implementation would accept an output range in the form of a `delegate(scope const(char)[])` that accepts, in successive calls, the rendering of the object as a string.
-* The `opCmp` and `opEquals` objects need to take `const Object` parameters, not `const ImprovedObject`. This is because overriding with covariant parameters would be unsound and is therefore not allowed. Using the weaker type `const Object` in the signature defers checks to runtime that should be done during compilation.
+* The `opCmp` and `opEquals` methods need to take `const Object` parameters, not `const ImprovedObject`. This is because overriding with covariant parameters would be unsound and is therefore not allowed. Using the weaker type `const Object` in the signature defers checks to runtime that should be done during compilation.
 * Overriding `opEquals` must also require the user to override `toHash` accordingly: two objects that are equal, must have the same hash value.
 * `opCmp` reveals an outdated design and implementation. Its presence was historically required by built-in associative arrays, which used binary trees needing ordering. The current implementation of associative arrays uses hashtables that lift the requirement. In
 addition, not all objects can be meaningfully ordered, so the best approach is to make comparison opt-in. Ordering comparisons in other class-based languages are done by means of interfaces, e.g. [`Comparable<T>` (Java)](https://docs.oracle.com/javase/7/docs/api/java/lang/Comparable.html) or [`IComparable<T>` (C#)](https://msdn.microsoft.com/en-us/library/4d7sx9hd.aspx).
@@ -79,7 +79,7 @@ class C { int a; this(int) @safe {} }
     assert(a == [c, c, c]);
 }
 ```
-It fails because the it calls the non-safe `Object.opEquals` method in a safe function. In fact, just comparing 2 classes with no user-defined opEquals - `assert (c == c)` - will issue an error in @safe code: "`@safe` function `D main` cannot call `@system` function `object.opEquals`".
+It fails because it calls the non-safe `Object.opEquals` method in a safe function. In fact, just comparing 2 classes with no user-defined opEquals - `assert (c == c)` - will issue an error in @safe code: "`@safe` function `D main` cannot call `@system` function `object.opEquals`".
 
 To make this work, a new root of all classes(in our case `ProtoObject`) and the `Equals` interface are needed, as well as an implementation for a mixin template that provides the implementation for opEquals. Then the `C` class must inherit from them and it must contain the mixin template as a field:
 ```D

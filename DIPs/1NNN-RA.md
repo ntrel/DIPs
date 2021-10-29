@@ -57,7 +57,7 @@ addition, not all objects can be meaningfully ordered, so the best approach is t
 * The current approach doesn't give the user the chance to opt in or out of certain functions (behaviours). There can be cases where the imposed methods don't make sense for the class type: ex. not all abstractions are of comparable types.
 * Because of the hidden `__mutex` member, and the fact that the D programming language supports function attributes, the design of `Object` is susceptible to the Fragile Base Class [Problem](https://www.javaworld.com/article/2073649/why-extends-is-evil.html): this states that a small and seemingly unrelated change in the Base class can lead to bugs and breakages in the Derived classes.
 
-To provide a real example of the proble the following code compiles:
+To provide a real example of the problem the following code compiles:
 ```D
 class C { int a; this(int) @safe {} }
 
@@ -109,7 +109,7 @@ mixin template ImplementEquals(M...)
 
 The final points are of crucial importance:
 *  must be backwards compatible. The introduction of ProtoObject must not break code
-* The user must be allowed to chose what methods he desires to implement
+* The user must be allowed to choose which methods are implemented
 * Root objects must work in attributed code without issues. Since we, sadly, can't predict the future and know if and what attributes and qualifiers will be available in the language, this is yet another argument to have a ProtoObject with no methods.
 
 ## Prior Work
@@ -129,7 +129,7 @@ Java's `java.lang.Object` defines the following methods:
 | void notifyAll();                                           | Used in synchronizing threads|
 | String toString();                                          | Can be used to convert the object to String|
 | void wait();                                                | Used in synchronizing threads|
-| protected Object clone() throws CloneNotSupportedException; | Return a new object that are exactly the same as the current object|
+| protected Object clone() throws CloneNotSupportedException; | Return a new object that is exactly the same as the current object|
 | protected void finalize() throws Throwable;                 | This method is called just before an object is garbage collected |
 
 Each object also has an `Object monitor` that is used in Java `synchronized` sections. Basically it is a semaphore, indicating if a critical section code is being executed by a thread or not. Before a critical section can be executed, the thread must obtain an Object monitor. Only one thread at a time can own that object's monitor.
@@ -150,7 +150,7 @@ C#'s `System.Object` defines the following methods that will be inherited by eve
 | GetType()     | Retrieves information about the object like method names, the objects name etc. |
 | ToString()    | Convert the object to a textual representation - usually for outputting to the screen or file. |
 
-As you can see, C# stripped a lot from it's `Object`, comparint to Java, and it comes a lot closer to what we desire:
+As you can see, C# stripped a lot from it's `Object`, compared to Java, and it comes a lot closer to what we desire:
 * Firstly, there is no builtin monitor. The [Monitor](https://docs.microsoft.com/en-us/dotnet/api/system.threading.monitor?view=netframework-4.7.2)
 object is implemented as a separate class that inherits from `Object` in the `System.Threading` namespace.
 * Secondly, C# has a smaller number of *imposed* methods, but they are still imposed, and `toString` will continue to be GC dependent.
@@ -177,6 +177,8 @@ impl Quack for Duck {
 }
 ```
 
+#### Conclusion
+
 After looking at how Java, C# and Rust have tackled the same problem, we are confident that the proposed solution is a good one:
 define an empty root object and define Interfaces that expose what is the desired behaviour of the class(es) that implement it.
 It can be argued that one is not really interested what type an object is, but rather if it can do a certain action (has a certain
@@ -198,7 +200,7 @@ class SynchronizedProtoObject : ProtoObject
 }
 class Object : SynchronizedProtoObject
 {
-    ... definition unchanged ...
+    ... existing methods ...
 }
 ```
 
@@ -206,11 +208,11 @@ This reconfiguration makes `ProtoObject`, not `Object`, the ultimate root of all
 
 This proposal is based on the following key insight. Currently, `Object` has two roles: (a) the root of all classes, and (b) the default supertype of class definitions that don't specify one. But there is no requirement that these two roles are fulfilled by the same type. This proposal keeps `Object` the default supertype in class definitions, which preserves existing code behavior. The additional supertypes of `Object` only influence newly-introduced code that is aware of them and uses them.
 
-The recommended way of going forward with types that inherit from `ProtoObject` is write and implement interfaces that expose the desired behaviour for the type that it supports. It can be argued that one is not really interested what type an object is, but rather what actions it can perform: what types can it act like? In this regard, an object of type T can be treated as a Collection, a Range or a Key in map, provided that it implements the right interfaces.
+The recommended way of going forward with types that inherit from `ProtoObject` is write and implement interfaces that expose the desired behaviour for the type that it supports. It can be argued that one is not really interested what type an object is, but rather what actions it can perform: what types can it act like? In this regard, an object of type T can be treated as a Collection, a Range or a Key in a map, provided that it implements the right interfaces.
 
-The GoF Design Patterns book talks at length about prefering implementing interfaces to inheriting from concrete classes, and why we should **favor object composition over class inheritance**. Extending from concrete classes is usually seen as a form of code reuse, but this is easly overused by programmers and can lead to the fragile base class problem. The same code reuse can be achieved through composition and delegation schemes: we are already doing this with `structs` and `Design by Introspection`.
+The 'Gang of Four' Design Patterns book talks at length about preferring implementing interfaces to inheriting from concrete classes, and why we should **favor object composition over class inheritance**. Extending from concrete classes is usually seen as a form of code reuse, but this is easily overused by programmers and can lead to the fragile base class problem. The same code reuse can be achieved through composition and delegation schemes: we are already doing this with `structs` and *Design by Introspection*.
 
-As stated earlier, the users will be required to implement specific interfaces that define methods corresponding to the ones in `Object`
+As stated earlier, the users will be required to implement specific interfaces that define methods corresponding to the ones in `Object`:
 | Interface | Method name                   |
 | --------- | ----------------------------- |
 | Stringify | string toString();            |
@@ -376,7 +378,7 @@ As it was the case with `Ordered`, to aid the user with the boilerplate code, we
 
 #### Hashing
 
-The user must implement the `Hash` interface if he desires to provide a hashable behaviour.
+A class must implement the `Hash` interface if it provides hashable behaviour.
 ```D
 interface Hash
 {

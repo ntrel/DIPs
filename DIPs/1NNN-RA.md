@@ -68,7 +68,7 @@ void main()
     assert(a == [c, c, c]);
 }
 ```
-while the next section of code fails to compile with the message "incompatible types for array comparison: `C[]` and `C[3]`":
+Whereas the next section of code fails to compile with the message "incompatible types for array comparison: `C[]` and `C[3]`":
 ```D
 class C { int a; this(int) @safe {} }
 
@@ -79,9 +79,9 @@ class C { int a; this(int) @safe {} }
     assert(a == [c, c, c]);
 }
 ```
-It fails because it calls the non-safe `Object.opEquals` method in a safe function. In fact, just comparing 2 classes with no user-defined opEquals - `assert (c == c)` - will issue an error in @safe code: "`@safe` function `D main` cannot call `@system` function `object.opEquals`".
+The comparison fails because the non-safe `Object.opEquals` method is called in a safe function. In fact, just comparing 2 classes with no user-defined `opEquals` - `assert (c == c)` - will issue an error in `@safe` code: "`@safe` function `D main` cannot call `@system` function `object.opEquals`".
 
-To make this work, a new root of all classes(in our case `ProtoObject`) and the `Equals` interface are needed, as well as an implementation for a mixin template that provides the implementation for opEquals. Then the `C` class must inherit from them and it must contain the mixin template as a field:
+To make this work, a new root of all classes (in our case `ProtoObject`) and the `Equals` interface are needed, as well as an implementation for a mixin template that provides the implementation for opEquals. Then the `C` class must inherit from them and it must contain the mixin template as a field:
 ```D
 class C : ProtoObject, Equals
 {

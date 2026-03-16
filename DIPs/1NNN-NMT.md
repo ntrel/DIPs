@@ -191,16 +191,6 @@ initialization.
 If there was no `...` syntax then the `... = init` syntax would be more of a
 special case, and not having that has its own drawbacks (see below).
 
-### Using an enum instead of `[elements, ...]`
-```d
-enum xdata = [1, 2, 3, 4];
-immutable int[xdata.length] x = xdata; //or slice
-```
-
-Drawbacks: This would be awkward to manually upgrade code, and adds a (global) declaration
-each time which is only used once. It is also awkward to type and users would have to be
-taught to use it.
-
 ### Adding missing elements with a value sequence template
 ```d
 import core.foo : repeat;

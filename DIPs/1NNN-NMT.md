@@ -212,8 +212,8 @@ Drawbacks: Needs to be done in a module constructor for global initialization, o
 for immutable/static initialization. This would make upgrading existing code more awkward.
 
 ### Not supporting `... = init`
-Drawbacks similar to above, and it would make porting C code harder which sometimes needs
-missing elements to be zeroed.
+Drawbacks similar to above when `E.init` is not wanted for missing elements. It would
+make porting C code harder which sometimes needs missing elements to be zeroed.
 
 ## Breaking Changes and Deprecations
 A deprecation for the next edition is chosen so that:

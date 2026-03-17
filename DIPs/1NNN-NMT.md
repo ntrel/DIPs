@@ -71,16 +71,50 @@ https://en.cppreference.com/w/c/language/array_initialization.html
 
 > All array elements that are not initialized explicitly are empty-initialized.
 
+```c
+int x[3] = {1, 2}; // Allowed
+```
+
+### C++
+Fixed size array [library type](https://en.cppreference.com/w/cpp/container/array.html).
+
+```c++
+#include <array>
+
+std::array<int, 3> a = {1, 2}; // Allowed
+```
+This is perhaps allowed due to `std::array` being a replacement for a C array.
+
 ### Rust
-Rust has [fixed size array types](https://doc.rust-lang.org/reference/types/array.html).
+Rust [fixed size arrays](https://doc.rust-lang.org/reference/types/array.html).
 
 ```rust
-const array: [i32; 3] = [1, 2]; // Error: expected an array with a size of 3
+const array: [i32; 3] = [1, 2]; // Error: expected an array with a size of 3, found one with a size of 2
+```
+
+### Haskell
+Haskell [fixed size arrays](https://www.haskell.org/onlinereport/haskell2010/haskellch14.html).
+The following declares a fixed size array with indexes 0, 1 and 2 and initializes it
+with only two elements:
+
+```hs
+main = do
+    let myArray = listArray (0, 2) [1, 2] -- Error: undefined array element
+```
+
+### Go
+Go [fixed size arrays](https://go.dev/ref/spec#Composite_literals) - see under *Array and slice literals*.
+
+> If fewer elements than the length are provided in the literal, the missing elements are set to the zero value for the array element type
+
+```go
+var myArray [3]int = [3]int{1, 2} // Allowed
 ```
 
 ### Require an Index
 Dennis [has a PR](https://github.com/dlang/dmd/pull/21821) which deprecates missing
-elements, requiring an index. See [Alternatives](#alternatives) for a critique.
+elements, requiring an index for one of the elements in the initializer. See
+[Alternatives](#alternatives) for a critique.
 
 ## Description
 Static initialization from an array initializer with missing elements will be deprecated

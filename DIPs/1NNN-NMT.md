@@ -158,15 +158,18 @@ be extended:
 
 A declaration of type `E[n]` with an array initializer `[elements, ...]` will have each
 missing element initialized by `E.init`. This applies to both static and dynamic
-initialization.
+initialization. A nested array initializer can also use this syntax when it relates to
+a static array.
 
 Examples:
 
 ```d
 int[3] x = [1, 2, ...];
+int[3][] slice = [[1, ...], [4, 5, ...]]; // nested array initializers
 
 void main() {
     assert(x == [1, 2, 0]);
+    assert(slice == [[1, 0, 0], [4, 5, 0]]);
 }
 void f(int i) {
     int[3] y = [i, ...];

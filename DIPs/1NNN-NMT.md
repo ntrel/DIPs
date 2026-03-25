@@ -185,7 +185,9 @@ It is an error to use `[elements, ...]` initializer syntax when:
 - there are no missing elements
 - an initializer element has an index specified e.g. `2: expr`
 
-The new syntax can be supported in the default edition too, as it does not break anything.
+The new syntax should be supported in the default edition too - it does not break
+existing code. It also enables support for missing elements in dynamically initialized
+static arrays.
 
 ## Alternatives
 

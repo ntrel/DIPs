@@ -168,6 +168,10 @@ int[3] x = [1, 2, ...];
 void main() {
     assert(x == [1, 2, 0]);
 }
+void f(int i) {
+    int[3] y = [i, ...];
+    assert(y == [i, 0, 0]);
+}
 ```
 
 It is an error to use `[elements, ...]` initializer syntax when:

@@ -149,7 +149,6 @@ be extended:
 -    [ ArrayElementInitializers ]
 +    [ ArrayElementInitializers ,opt ]
 +    [ ArrayElementInitializers , ... ]
-+    [ ArrayElementInitializers , ... = Initializer ]
 
  ArrayElementInitializers:
      ArrayElementInitializer
@@ -161,40 +160,13 @@ A declaration of type `E[n]` with an array initializer `[elements, ...]` will ha
 missing element initialized by `E.init`. This applies to both static and dynamic
 initialization.
 
-The [*Initializer*](https://dlang.org/spec/declaration.html#initializers) form is used to
-initialize each of the missing elements in the array initializer. It can be:
-- an expression
-- an array initializer (when `E` is an array type)
-- a struct initializer
-- `void` - an implementation would leave just the missing elements uninitialized
-
-All expressions in *Initializer* must be known at compile-time, even for dynamic
-initialization. This makes it illegal for an expression to have side-effects, so each
-missing element has the same value.
-
-The *Initializer* form is useful when porting code from C which needs missing elements to
-be zeroed. This also complements D's special handling of character array initialization
-[from a string literal](https://dlang.org/spec/arrays.html#static-string) where missing
-elements are zeroed.
-
 Examples:
 
 ```d
 int[3] x = [1, 2, ...];
-int[3] y = [1, ... = 5];
-float[3] z = [1.5F, ... = 0F]; // zero, not float.init
-int[3][] slice = [[1, ...], [4, ... = 5]]; // nested static array
 
 void main() {
     assert(x == [1, 2, 0]);
-    assert(y == [1, 5, 5]);
-    assert(z == [1.5F, 0F, 0F]);
-    assert(slice == [[1, 0, 0], [4, 5, 5]]);
-
-    int[3] a = [1, ... = x[2]]; // Error, `x` is not known at compile-time
-    int[3] b = [1, 2, ... = void];
-    assert(b[0..2] == [1, 2]);
-    // b[2] is unknown
 }
 ```
 
@@ -203,10 +175,6 @@ It is an error to use `[elements, ...]` initializer syntax when:
 - the declaration is not a static array
 - there are no missing elements
 - an initializer element has an index specified e.g. `2: expr`
-
-However, `[elements, ... = init]` could be supported when there is an element with an
-index specified and there is a missing element. In that case, every missing element must
-be initialized with `init`, not just trailing elements. Otherwise it should be an error.
 
 The new syntax can be supported in the default edition too, as it does not break anything.
 
@@ -223,9 +191,6 @@ it when issuing a missing elements error. People new to the syntax would likely 
 it on the forum. Note: Currently using a leading `0:` still errors for dynamic
 initialization.
 
-If there was no `...` syntax then the `... = init` syntax would be more of a
-special case, and not having that has its own drawbacks (see below).
-
 ### Adding missing elements with a value sequence template
 ```d
 import core.foo : repeat;
@@ -235,7 +200,7 @@ int[100] x = [1, 2, 3, repeat!(0, 97)];
 Drawbacks: Needs specifying number of missing elements and adjusting when adding/removing
 elements. May cause template bloat. Needs an import somewhere.
 
-### Using slice assignment instead of `[elements, ... = init]`
+### Using slice assignment instead of `[elements, ...]`
 ```d
 void f() {
     int[5] x;
@@ -245,10 +210,6 @@ void f() {
 
 Drawbacks: Needs to be done in a module constructor for global initialization, or with CTFE
 for immutable/static initialization. This would make upgrading existing code more awkward.
-
-### Not supporting `... = init`
-Drawbacks similar to above when `E.init` is not wanted for missing elements. It would
-make porting C code harder which sometimes needs missing elements to be zeroed.
 
 ## Breaking Changes and Deprecations
 A deprecation for the next edition is chosen so that:
@@ -264,12 +225,10 @@ e.g. [`dscanner --applySingle`](https://github.com/dlang-community/D-Scanner?tab
 ### Missing Elements Compiler Suggestions
 When issuing a deprecation for missing elements, the compiler should suggest using
 `[elements, ...]` initializer syntax.
-
-When the array declaration of type `E[n]` has a nonzero `E.init` and `0` is a valid
-element initializer, the compiler should also remind the user to use
-`[elements, ... = 0]` initializer syntax if they are porting code from C. This can help
-avoid bugs with character arrays that should be zero-terminated, or floating point arrays
-which should have missing elements zeroed.
+When an array declaration of type `E[n]` has a nonzero `E.init`, the compiler could show
+a supplemental message to remind the user to take care when porting code from C. This
+would help avoid bugs with arrays which should have missing elements zeroed (which could
+be done at runtime).
 
 ## Reference
 - Github issue: https://github.com/dlang/dmd/issues/21817.

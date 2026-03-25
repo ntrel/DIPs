@@ -76,14 +76,16 @@ int x[3] = {1, 2}; // Allowed
 ```
 
 ### C++
-Fixed size array [library type](https://en.cppreference.com/w/cpp/container/array.html).
+In addition to above C support, there is a fixed size array
+[library type](https://en.cppreference.com/w/cpp/container/array.html).
 
 ```c++
 #include <array>
 
 std::array<int, 3> a = {1, 2}; // Allowed
 ```
-This is perhaps allowed due to `std::array` being a replacement for a C array.
+This is presumably due to C++ initializer list semantics
+[for missing elements](https://en.cppreference.com/w/cpp/language/aggregate_initialization.html#Implicitly_initialized_elements).
 
 ### Rust
 Rust [fixed size arrays](https://doc.rust-lang.org/reference/types/array.html).

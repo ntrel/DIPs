@@ -187,7 +187,7 @@ The new syntax can be supported in the default edition too, as it does not break
 ### Manually adding missing elements instead of `[elements, ...]`
 This would be tedious when there are a lot of missing elements. It would likely need
 an additional (global) declaration when there is no short token available to use for
-`E.init`.
+`E.init` (e.g. when E is a struct template instantiation).
 
 ### Using `[0: first, tail]` instead of `[first, tail, ...]`
 This is not as intuitive to read, but could be made to work. The compiler could suggest
@@ -201,8 +201,8 @@ import core.foo : repeat;
 int[100] x = [1, 2, 3, repeat!(0, 97)];
 ```
 
-Drawbacks: Needs specifying number of missing elements and adjusting when adding/removing
-elements. May cause template bloat. Needs an import somewhere.
+Drawbacks: Needs specifying the number of missing elements and adjusting when
+adding/removing elements. May cause template bloat. Needs an import somewhere.
 
 ### Using slice assignment instead of `[elements, ...]`
 ```d
@@ -212,8 +212,10 @@ void f() {
 }
 ```
 
-Drawbacks: Needs to be done in a module constructor for global initialization, or with CTFE
-for immutable/static initialization. This would make upgrading existing code more awkward.
+Drawbacks: Needs to be done in a module constructor for global initialization, or with
+CTFE for static initialization. The number of elements on the right hand side needs to be
+provided for the slice, which could be hard to count. Either of these would make
+upgrading existing code more awkward.
 
 ## Breaking Changes and Deprecations
 A deprecation for the next edition is chosen so that:
@@ -221,23 +223,24 @@ A deprecation for the next edition is chosen so that:
 - default edition users do not get deprecation messages when simply upgrading a single
   compiler version
 - when upgrading to the next edition, users have some time to upgrade their code instead of
-  being required to do so before they can use the next edition
+  being required to do so (by an error) before they can use the next edition
 
 A tool should be provided to automatically update declarations that would be deprecated,
-e.g. [`dscanner --applySingle`](https://github.com/dlang-community/D-Scanner?tab=readme-ov-file#auto-fixing-issues).
+e.g. [`dscanner fix --applySingle`](https://github.com/dlang-community/D-Scanner?tab=readme-ov-file#auto-fixing-issues).
 
-### Missing Elements Compiler Suggestions
+### Compiler Suggestions
 When issuing a deprecation for missing elements, the compiler should suggest using
 `[elements, ...]` initializer syntax.
-When an array declaration of type `E[n]` has a nonzero `E.init`, the compiler could show
-a supplemental message to remind the user to take care when porting code from C. This
-would help avoid bugs with arrays which should have missing elements zeroed (which could
-be done at runtime).
+When such an array declaration (of type `E[n]`) has a nonzero `E.init`, the compiler
+could show a supplemental message to remind the user to take care if they are porting
+code from C. This would help avoid bugs with arrays which should have missing elements
+zeroed (which could be done at runtime).
 
 ## Reference
 - Github issue: https://github.com/dlang/dmd/issues/21817.
-- [DLF September 2025 Monthly Meeting](https://forum.dlang.org/post/ucuhbblifjcjkfvikbqm@forum.dlang.org)
 - Walter's `[elements, ...]` [implementation](https://github.com/WalterBright/dmd/commit/cbcd47975fec7af7467c12fac83ef13a05dad745).
+- [DLF September 2025 Monthly Meeting](https://forum.dlang.org/post/ucuhbblifjcjkfvikbqm@forum.dlang.org) -
+see part of the *Static array length inference* discussion.
 
 ## Copyright & License
 Copyright (c) 2026 by the D Language Foundation

@@ -9,7 +9,7 @@
 
 ## Abstract
 Deprecate missing elements in statically initialized static arrays in the next edition,
-unless the missing elements in the array initializer are marked using new syntax.
+unless the missing elements in the array initializer are opted-into using new syntax.
 
 ## Contents
 * [Rationale](#rationale)
@@ -120,12 +120,12 @@ elements, requiring an index for one of the elements in the initializer. See
 Static initialization from an array initializer with missing elements will be deprecated
 in the next edition, except when:
 
-- new `...` syntax is used
-- an element initializer has an index specified
-- the array initializer is empty `[]`
+1. new `...` syntax is used
+1. an element initializer has an index specified
+1. the array initializer is empty `[]`
 
-Note: The second case is already allowed to have missing elements by design (including
-for dynamic initialization).
+The second case is already allowed to have missing elements by design (including
+for dynamic initialization). The third case is not considered bug-prone.
 
 Examples:
 
@@ -158,7 +158,8 @@ be extended:
 ```
 
 A declaration of type `E[n]` with an array initializer `[elements, ...]` will have each
-missing element initialized by `E.init`.
+missing element initialized by `E.init`. This applies to both static and dynamic
+initialization.
 
 The [*Initializer*](https://dlang.org/spec/declaration.html#initializers) form is used to
 initialize each of the missing elements in the array initializer. It can be:

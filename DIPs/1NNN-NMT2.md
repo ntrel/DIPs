@@ -8,8 +8,8 @@
 | Status:         | Draft                                                           |
 
 ## Abstract
-Defer 2 attribute checks for `scope const` delegate parameters to the caller of the function,
-rather than the function itself.
+Defer `@nogc` and `@safe` attribute checks for a non-mutable `scope` delegate parameter
+to the caller of the function (if needed).
 
 ## Contents
 * [Rationale](#rationale)
@@ -44,7 +44,7 @@ TODO
 
 ## Description
 1. Allow a function `f` with a `@nogc` or `@safe` attribute and a
-   `scope` non-mutable delegate parameter to call the delegate without checking the delegate has
+   non-mutable `scope` delegate parameter to call the delegate without checking the delegate has
    compatible attributes. Any other expression `f` evaluates must still comply with
    `f`'s attributes.
 2. If a caller of `f` has a `@nogc` or `@safe` attribute matching `f`'s attributes, the delegate
@@ -86,7 +86,7 @@ void baz() @system {
 }
 ```
 3. When [inferring attributes](https://dlang.org/spec/function.html#function-attribute-inference)
-   for a function `f` with a `scope` non-mutable delegate parameter, the delegate parameter
+   for a function `f` with a non-mutable `scope` delegate parameter, the delegate parameter
    will be treated as if it were marked `@nogc @safe`.
 
 ```d
@@ -105,7 +105,7 @@ void baz() @system {
     foo({ noAttributes(); }); // OK, `baz` is @system
 }
 ```
-4. The above points also apply for a `scope` non-mutable *function pointer* parameter.
+4. The above points also apply for a non-mutable `scope` *function pointer* parameter.
 5. The above points can also apply for delegate/function pointer parameters which are
    [inferred as `scope`](https://dlang.org/spec/function.html#function-attribute-inference).
    `scope` parameter inference must be done before `f`'s attribute inference happens.

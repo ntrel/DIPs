@@ -44,16 +44,11 @@ TODO
 
 ## Description
 1. Allow a function `f` with a `@nogc` or `@safe` attribute and a
-   `scope const` delegate parameter to call the delegate without checking the delegate has
+   `scope` non-mutable delegate parameter to call the delegate without checking the delegate has
    compatible attributes. Any other expression `f` evaluates must still comply with
    `f`'s attributes.
 2. If a caller of `f` has a `@nogc` or `@safe` attribute matching `f`'s attributes, the delegate
    passed to `f` must comply with the matching attributes.
-3. The same applies for a `scope const` *function pointer* parameter, though that is omitted
-   throughout this DIP.
-4. The same applies for `scope immutable` delegate/function pointer parameters.
-5. The same applies for `const`/`immutable` delegate/function pointer parameters which are
-   [inferred as `scope`](https://dlang.org/spec/function.html#function-attribute-inference).
 
 Note: Examples require [`-preview=in`](https://dlang.org/spec/function.html#in-params) for
 the `in` parameter storage class (to mean `scope const`).
@@ -90,18 +85,17 @@ void baz() @system {
     foo({ noAttributes(); }); // OK, baz is @system
 }
 ```
-6. When [inferring attributes](https://dlang.org/spec/function.html#function-attribute-inference)
-   for a function `f` with a `scope const` delegate parameter, the delegate parameter will be
-   treated as if it were marked `@nogc @safe`.
-7. The same applies when a `const` delegate parameter is inferred as `scope`.
+3. When [inferring attributes](https://dlang.org/spec/function.html#function-attribute-inference)
+   for a function `f` with a `scope` non-mutable delegate parameter, the delegate parameter
+   will be treated as if it were marked `@nogc @safe`.
 
 ```d
 void noAttributes();
 void delegate safeDel() @safe;
 
-// template foo is not marked @safe
-void foo()(const void delegate() cd) { // cd is inferred as scope
-    cd(); // OK, cd isn't checked for @safe here
+// template `foo` is not marked @safe
+void foo()(scope const void delegate() cd) {
+    cd(); // OK, `cd` isn't checked for @safe here
 }
 void bar() @safe {
     foo(safeDel); // OK, safeDel is safe and foo call is inferred safe
@@ -111,6 +105,10 @@ void baz() @system {
     foo({ noAttributes(); }); // OK, baz is @system
 }
 ```
+4. The above points also apply for a `scope` non-mutable *function pointer* parameter.
+5. The above points can also apply for delegate/function pointer parameters which are
+   [inferred as `scope`](https://dlang.org/spec/function.html#function-attribute-inference).
+   `scope` parameter inference must be done before `f`'s attribute inference happens.
 
 ## Breaking Changes and Deprecations
 This section is not required if no breaking changes or deprecations are anticipated.

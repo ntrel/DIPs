@@ -1,4 +1,4 @@
-# Deferred attribute enforcement for functions with `scope const` delegate parameters
+# Call-site enforcement for `@nogc`/`@safe` functions with `scope const` delegate parameters
 
 | Field           | Value                                                           |
 |-----------------|-----------------------------------------------------------------|
@@ -8,7 +8,7 @@
 | Status:         | Draft                                                           |
 
 ## Abstract
-Defer attribute checks for `scope const` delegate parameters to the caller of the function,
+Defer 2 attribute checks for `scope const` delegate parameters to the caller of the function,
 rather than the function itself.
 
 ## Contents
@@ -21,85 +21,90 @@ rather than the function itself.
 * [History](#history)
 
 ## Rationale
+TODO
+
 - If a function `f` has a delegate parameter marked `scope`, it must not escape `f`.
   Therefore it is reasonable to assume it will be called by `f`, in order for the delegate
   to be useful.
 - If the delegate is not mutable, it cannot be reassigned to a delegate which doesn't
   comply with `f`'s attributes.
-
-TODO
+- When `f` has `@nogc` or `@safe` attributes, they only need to be enforced for the
+  delegate argument when `f` is called by a `@nogc` or `@safe` function.
+  If a caller of `f` does not have those attributes,
+  `f`'s delegate argument body could freely allocate on the GC or use `@system` operations. In
+  addition, both caller scenarios are supported with the same machine code of `f`. In contrast,
+  `nothrow` and `pure` would make code generation problematic if this DIP
+  treated them like `@nogc` and `@safe`.
 
 ## Prior Work
 - <https://forum.dlang.org/post/scpdxcikxgaywgcvknok@forum.dlang.org> by Quirin Schroll -
-  see solution. This DIP builds on that idea by adding `scope const` restrictions to the
-  parameter.
-- <https://github.com/dlang/dmd/discussions/22905>
+  see solution. This DIP strengthens that idea by adding some restrictions.
+- <https://github.com/dlang/dmd/discussions/22905> - a different proposal to solve the
+  same problem.
 
 ## Description
-1. Allow a function `f` with a `nothrow`/`pure`/`@nogc`/`@safe` attribute and a
+1. Allow a function `f` with a `@nogc` or `@safe` attribute and a
    `scope const` delegate parameter to call the delegate without checking the delegate has
    compatible attributes. Any other expression `f` evaluates must still comply with
    `f`'s attributes.
-2. If a caller of `f` has an attribute matching `f`'s attributes, the delegate
+2. If a caller of `f` has a `@nogc` or `@safe` attribute matching `f`'s attributes, the delegate
    passed to `f` must comply with the matching attributes.
-3. For optimization and code generation, `f` cannot be treated as truly `pure` or `nothrow`
-   unless all of its `scope const` delegate parameters are also marked `pure`/`nothrow`.
-4. The same applies for a `scope const` *function pointer* parameter, though that is omitted
+3. The same applies for a `scope const` *function pointer* parameter, though that is omitted
    throughout this DIP.
-5. The same applies for `scope immutable` delegate/function pointer parameters.
-6. The same applies for `const`/`immutable` delegate/function pointer parameters which are
+4. The same applies for `scope immutable` delegate/function pointer parameters.
+5. The same applies for `const`/`immutable` delegate/function pointer parameters which are
    [inferred as `scope`](https://dlang.org/spec/function.html#function-attribute-inference).
 
 Note: Examples require [`-preview=in`](https://dlang.org/spec/function.html#in-params) for
 the `in` parameter storage class (to mean `scope const`).
 ```d
 void noAttributes();
-void delegate() pure pureGD;
+void delegate() @nogc nogcDel;
 
-void foo(in void delegate() id, void delegate() d) pure {
-    id(); // OK, id's purity isn't checked here
-    d(); // Error, d is not pure
-    noAttributes(); // Error, can't call impure function
+void foo(in void delegate() id, void delegate() d) @nogc {
+    id(); // OK, id's isn't checked for @nogc here
+    d(); // Error, d is not @nogc
+    noAttributes(); // Error, can't call non-@nogc function
 }
-void bar() pure {
-    foo(pureGD); // OK, pureGD is pure and foo is marked pure
-    foo({ noAttributes(); }); // Error, can't call impure delegate literal
+void bar() @nogc {
+    foo(nogcDel); // OK, nogcDel is @nogc and foo is marked @nogc
+    foo({ noAttributes(); }); // Error, can't call non-@nogc delegate literal
 }
 void baz() {
-    foo({ noAttributes(); }); // OK, baz isn't pure
+    foo({ noAttributes(); }); // OK, baz isn't @nogc
 }
 ```
 ```d
 void noAttributes();
-void delegate() @safe safeGD;
+void delegate() @safe safeDel;
 
 void foo(in void delegate() id) @safe {
-    id(); // OK, id's safety isn't checked here
+    id(); // OK, id's isn't checked for @safe here
     noAttributes(); // Error, can't call @system function
 }
 void bar() @safe {
-    foo(safeGD); // OK, safeGD is safe and foo is marked safe
+    foo(safeDel); // OK, safeDel is safe and foo is marked safe
     foo({ noAttributes(); }); // Error, can't call @system delegate literal
 }
 void baz() @system {
     foo({ noAttributes(); }); // OK, baz is @system
 }
 ```
-7. When [inferring attributes](https://dlang.org/spec/function.html#function-attribute-inference)
+6. When [inferring attributes](https://dlang.org/spec/function.html#function-attribute-inference)
    for a function `f` with a `scope const` delegate parameter, the delegate parameter will be
-   treated as if it were marked `nothrow pure @nogc @safe`.
-8. The same applies when a `const` delegate parameter is inferred as `scope`.
+   treated as if it were marked `@nogc @safe`.
+7. The same applies when a `const` delegate parameter is inferred as `scope`.
 
 ```d
 void noAttributes();
-void delegate safeGD() @safe;
+void delegate safeDel() @safe;
 
 // template foo is not marked @safe
 void foo()(const void delegate() cd) { // cd is inferred as scope
-    cd(); // OK, cd's safety isn't checked here
+    cd(); // OK, cd isn't checked for @safe here
 }
 void bar() @safe {
-    foo(safeGD); // OK, safeGD is safe and foo call is inferred safe
+    foo(safeDel); // OK, safeDel is safe and foo call is inferred safe
     foo({ noAttributes(); }); // Error, can't call @system delegate literal
 }
 void baz() @system {

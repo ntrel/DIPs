@@ -57,16 +57,16 @@ void noAttributes();
 void delegate() @nogc nogcDel;
 
 void foo(in void delegate() id, void delegate() d) @nogc {
-    id(); // OK, id's isn't checked for @nogc here
-    d(); // Error, d is not @nogc
+    id(); // OK, `id` isn't checked for @nogc here
+    d(); // Error, `d` is not marked @nogc or `in`
     noAttributes(); // Error, can't call non-@nogc function
 }
 void bar() @nogc {
-    foo(nogcDel); // OK, nogcDel is @nogc and foo is marked @nogc
+    foo(nogcDel); // OK, `nogcDel` is @nogc and `foo` is marked @nogc
     foo({ noAttributes(); }); // Error, can't call non-@nogc delegate literal
 }
 void baz() {
-    foo({ noAttributes(); }); // OK, baz isn't @nogc
+    foo({ noAttributes(); }); // OK, `baz` isn't @nogc
 }
 ```
 ```d
@@ -74,15 +74,15 @@ void noAttributes();
 void delegate() @safe safeDel;
 
 void foo(in void delegate() id) @safe {
-    id(); // OK, id's isn't checked for @safe here
+    id(); // OK, `id` isn't checked for @safe here
     noAttributes(); // Error, can't call @system function
 }
 void bar() @safe {
-    foo(safeDel); // OK, safeDel is safe and foo is marked safe
+    foo(safeDel); // OK, `safeDel` is safe and `foo` is marked safe
     foo({ noAttributes(); }); // Error, can't call @system delegate literal
 }
 void baz() @system {
-    foo({ noAttributes(); }); // OK, baz is @system
+    foo({ noAttributes(); }); // OK, `baz` is @system
 }
 ```
 3. When [inferring attributes](https://dlang.org/spec/function.html#function-attribute-inference)
@@ -98,11 +98,11 @@ void foo()(scope const void delegate() cd) {
     cd(); // OK, `cd` isn't checked for @safe here
 }
 void bar() @safe {
-    foo(safeDel); // OK, safeDel is safe and foo call is inferred safe
+    foo(safeDel); // OK, `safeDel` is safe and `foo` call is inferred safe
     foo({ noAttributes(); }); // Error, can't call @system delegate literal
 }
 void baz() @system {
-    foo({ noAttributes(); }); // OK, baz is @system
+    foo({ noAttributes(); }); // OK, `baz` is @system
 }
 ```
 4. The above points also apply for a `scope` non-mutable *function pointer* parameter.

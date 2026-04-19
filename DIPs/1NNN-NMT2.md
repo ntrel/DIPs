@@ -21,7 +21,18 @@ to the caller of the function (if needed).
 * [History](#history)
 
 ## Rationale
-TODO
+For a function `f`, a delegate parameter has to match the `@nogc` and `@safe` attributes which
+`f` is declared with. This means a caller of `f` is restricted to passing a delegate
+argument which matches `f`'s attributes, even if the caller does not need to comply
+with those attributes. If `f` doesn't support those attributes, functions that are
+required to support them cannot call `f`.
+To support both cases fully, `f` would need overloads for each of the 4 possible
+attribute combinations (none, one of each, and both). That is not practical.
+
+[Attribute inference](https://dlang.org/spec/function.html#function-attribute-inference)
+for `f` is effectively disabled when a delegate parameter does not specify attributes.
+
+## Analysis
 
 - If a function `f` has a delegate parameter marked `scope`, it must not escape `f`.
   Therefore it is reasonable to assume it will be called by `f`, in order for the delegate

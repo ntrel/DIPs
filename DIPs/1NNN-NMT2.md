@@ -24,10 +24,33 @@ to the caller of the function (if needed).
 For a function `f`, a delegate parameter has to match the `@nogc` and `@safe` attributes which
 `f` is declared with. This means a caller of `f` is restricted to passing a delegate
 argument which matches `f`'s attributes, even if the caller does not need to comply
-with those attributes. If `f` doesn't support those attributes, functions that are
-required to support them cannot call `f`.
+with those attributes, and the parameter does not escape `f`. If `f` doesn't support
+those attributes, functions that are required to support them cannot call `f`.
 To support both cases fully, `f` would need overloads for each of the 4 possible
 attribute combinations (none, one of each, and both). That is not practical.
+
+```
+void foo(scope void delegate() @nogc @safe sd) @nogc @safe
+{
+    // `sd` is not reassigned
+    sd();
+}
+
+void delegate() @safe d1;
+void delegate() @system d2;
+
+void bar() @safe {
+    foo(d1); // OK
+    foo(d2); // Error, `d2` is not @safe - necessary
+}
+
+void bar() @nogc @system {
+    foo(d1); // OK
+    foo(d2); // Error, `d2` is not @safe - not useful
+}
+```
+The error about needing the delegate to comply with `@safe` when it is being called from
+a `@system` function is not useful, because `bar` is allowed to execute unsafe operations.
 
 [Attribute inference](https://dlang.org/spec/function.html#function-attribute-inference)
 for `f` is effectively disabled when a delegate parameter does not specify attributes.

@@ -1,4 +1,4 @@
-# Call-site enforcement for `@nogc`/`@safe` functions with `scope const` delegate parameters
+# Call-site enforcement for `@nogc`/`@safe` functions with `scope` delegate parameters
 
 | Field           | Value                                                           |
 |-----------------|-----------------------------------------------------------------|
@@ -8,8 +8,8 @@
 | Status:         | Draft                                                           |
 
 ## Abstract
-Defer `@nogc` and `@safe` attribute checks for a non-mutable `scope` delegate parameter
-to the caller of the function (if needed).
+Defer `@nogc` and `@safe` attribute checks for a function with a `scope` delegate
+parameter to the caller of the function (if needed).
 
 ## Contents
 * [Rationale](#rationale)
@@ -21,10 +21,13 @@ to the caller of the function (if needed).
 * [History](#history)
 
 ## Rationale
-For a function `f`, a delegate parameter has to match the `@nogc` and `@safe` attributes which
-`f` is declared with. This means a caller of `f` is restricted to passing a delegate
+In a function `f`, in order to call a delegate parameter, the delegate has to match
+the `@nogc` and `@safe` attributes which `f` is declared with.
+This means a caller of `f` is restricted to passing a delegate
 argument which matches `f`'s attributes, even if the caller does not need to comply
-with those attributes, and the parameter does not escape `f`. If `f` doesn't support
+with those attributes, and the parameter does not escape `f`.
+
+If `f` doesn't support
 those attributes, functions that are required to support them cannot call `f`.
 To support both cases fully, `f` would need overloads for each of the 4 possible
 attribute combinations (none, one of each, and both). That is not practical.
@@ -32,7 +35,6 @@ attribute combinations (none, one of each, and both). That is not practical.
 ```
 void foo(scope void delegate() @nogc @safe sd) @nogc @safe
 {
-    // `sd` is not reassigned
     sd();
 }
 
@@ -41,19 +43,21 @@ void delegate() @system d2;
 
 void bar() @safe {
     foo(d1); // OK
-    foo(d2); // Error, `d2` is not @safe - necessary
+    foo(d2); // Error: `d2` is not @safe - necessary
 }
 
 void bar() @nogc @system {
     foo(d1); // OK
-    foo(d2); // Error, `d2` is not @safe - not useful
+    foo(d2); // Error: `d2` is not @safe - not useful
 }
 ```
 The error about needing the delegate to comply with `@safe` when it is being called from
 a `@system` function is not useful, because `bar` is allowed to execute unsafe operations.
 
-[Attribute inference](https://dlang.org/spec/function.html#function-attribute-inference)
-for `f` is effectively disabled when a delegate parameter does not specify attributes.
+Another problem is that
+[attribute inference](https://dlang.org/spec/function.html#function-attribute-inference)
+for `f` (when applicable), is effectively disabled when a delegate parameter does not
+specify attributes.
 
 ## Analysis
 
@@ -76,72 +80,56 @@ for `f` is effectively disabled when a delegate parameter does not specify attri
   This DIP further develops that idea.
 
 ## Description
-1. Allow a function `f` with a `@nogc` or `@safe` attribute and a
-   non-mutable `scope` delegate parameter to call the delegate without checking the delegate has
-   compatible attributes. Any other expression `f` evaluates must still comply with
-   `f`'s attributes.
+1. Allow a function `f` with `@nogc` and/or `@safe` attributes and a
+   `scope` delegate parameter to treat the delegate as if it had matching `@nogc`
+   and/or `@safe` attributes when performing semantic analysis of `f`.
 2. If a caller of `f` has a `@nogc` or `@safe` attribute matching `f`'s attributes, the delegate
    passed to `f` must comply with the matching attributes.
 
-Note: Examples require [`-preview=in`](https://dlang.org/spec/function.html#in-params) for
-the `in` parameter storage class (to mean `scope const`).
-```d
-void noAttributes();
-void delegate() @nogc nogcDel;
-
-void foo(in void delegate() id, void delegate() d) @nogc {
-    id(); // OK, `id` isn't checked for @nogc here
-    d(); // Error, `d` is not marked @nogc or `in`
-    noAttributes(); // Error, can't call non-@nogc function
-}
-void bar() @nogc {
-    foo(nogcDel); // OK, `nogcDel` is @nogc and `foo` is marked @nogc
-    foo({ noAttributes(); }); // Error, can't call non-@nogc delegate literal
-}
-void baz() {
-    foo({ noAttributes(); }); // OK, `baz` isn't @nogc
-}
-```
 ```d
 void noAttributes();
 void delegate() @safe safeDel;
 
-void foo(in void delegate() id) @safe {
-    id(); // OK, `id` isn't checked for @safe here
-    noAttributes(); // Error, can't call @system function
+void foo(scope void delegate() sd, void delegate() d) @safe {
+    sd(); // OK, `sd` isn't checked for @safe here
+    d(); // Error: delegate parameter `d` is not `@safe` or `scope`
+    noAttributes(); // Error: can't call `@system` function
+    sd = { noAttributes(); }; // Error: cannot assign `@system` delegate to `sd`
+    sd = safeDel; // OK
+    sd(); // still OK
 }
 void bar() @safe {
-    foo(safeDel); // OK, `safeDel` is safe and `foo` is marked safe
-    foo({ noAttributes(); }); // Error, can't call @system delegate literal
+    foo(safeDel); // OK, `foo` is marked @safe
+    foo({ noAttributes(); }); // Error: can't pass `@system` delegate literal
 }
 void baz() @system {
     foo({ noAttributes(); }); // OK, `baz` is @system
 }
 ```
 3. When [inferring attributes](https://dlang.org/spec/function.html#function-attribute-inference)
-   for a function `f` with a non-mutable `scope` delegate parameter, the delegate parameter
-   will be treated as if it were marked `@nogc @safe`.
+   for a function `f` with a `scope` delegate parameter, and the parameter is not reassigned,
+   the parameter will be treated as if it was marked `@nogc @safe`.
 
 ```d
 void noAttributes();
 void delegate safeDel() @safe;
 
 // template `foo` is not marked @safe
-void foo()(scope const void delegate() cd) {
-    cd(); // OK, `cd` isn't checked for @safe here
+void foo()(scope void delegate() sd) {
+    // `sd` is not reassigned
+    sd(); // OK, `sd` isn't checked for @safe here
 }
 void bar() @safe {
-    foo(safeDel); // OK, `safeDel` is safe and `foo` call is inferred safe
-    foo({ noAttributes(); }); // Error, can't call @system delegate literal
+    foo(safeDel); // OK, `foo` call is inferred @safe
+    foo({ noAttributes(); }); // Error: can't pass `@system` delegate literal
 }
 void baz() @system {
     foo({ noAttributes(); }); // OK, `baz` is @system
 }
 ```
-4. The above points also apply for a non-mutable `scope` *function pointer* parameter.
-5. The above points can also apply for delegate/function pointer parameters which are
+4. The above points can also apply for delegate parameters which are
    [inferred as `scope`](https://dlang.org/spec/function.html#function-attribute-inference).
-   `scope` parameter inference must be done before `f`'s attribute inference happens.
+5. The above points also apply equivalently for function pointers instead of delegates.
 
 ## Breaking Changes and Deprecations
 This section is not required if no breaking changes or deprecations are anticipated.

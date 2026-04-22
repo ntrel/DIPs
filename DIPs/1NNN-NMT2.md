@@ -71,10 +71,9 @@ for `f` is effectively disabled when a delegate parameter does not specify attri
   treated them like `@nogc` and `@safe`.
 
 ## Prior Work
-- <https://forum.dlang.org/post/scpdxcikxgaywgcvknok@forum.dlang.org> by Quirin Schroll -
-  see solution. This DIP strengthens that idea by adding some restrictions.
-- <https://github.com/dlang/dmd/discussions/22905> - a different proposal to solve the
-  same problem.
+- [This forum post](https://forum.dlang.org/post/scpdxcikxgaywgcvknok@forum.dlang.org>)
+  led to <https://github.com/dlang/DIPs/blob/master/DIPs/other/DIP1041.md> -
+  This DIP further develops that idea.
 
 ## Description
 1. Allow a function `f` with a `@nogc` or `@safe` attribute and a
@@ -154,6 +153,9 @@ user code and have no well-defined deprecation process have a minimal chance of
 being approved.
 
 ## Reference
+- <https://github.com/dlang/dmd/discussions/22905> - a different proposal to solve the
+  same problem.
+
 Optional links to reference material such as existing discussions, research papers
 or any other supplementary materials.
 

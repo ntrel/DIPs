@@ -64,6 +64,20 @@ array initializer.
 
 > My own data found 3 more, so that's 4 errors in about 8 instances of this pattern; ~50% error rate!
 
+### Supporting Missing Elements
+For static initialization in particular, due to binary ABI compatibility a static
+array may be declared with more elements than are currently needed to allow for
+future extensibility. Often the unused elements being default initialized is enough
+to detect and handle the spare elements.
+
+```d
+// reserve 13 empty slots
+int[16] magicNumbers = [7, 13, 42];
+```
+
+Because C allows missing elements (see below), this pattern may be encountered when
+porting C code to D. However, the pattern is also useful in its own right.
+
 ## Prior Work
 Below examples show how a selection of languages handle a fixed-size array
 declaration with a static initializer which has missing elements.

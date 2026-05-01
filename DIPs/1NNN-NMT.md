@@ -65,6 +65,8 @@ array initializer.
 > My own data found 3 more, so that's 4 errors in about 8 instances of this pattern; ~50% error rate!
 
 ## Prior Work
+Below examples show how a selection of languages handle a fixed-size array
+declaration with a static initializer which has missing elements.
 
 ### C
 https://en.cppreference.com/w/c/language/array_initialization.html
@@ -100,8 +102,10 @@ The following declares a fixed size array with indexes 0, 1 and 2 and initialize
 with only two elements:
 
 ```hs
-main = do
-    let myArray = listArray (0, 2) [1, 2] -- Error: undefined array element
+import Data.Array (Array, listArray)
+
+myArr :: Array Int Int
+myArr = listArray (0, 2) [1, 2] -- Error: undefined array element
 ```
 
 ### Go

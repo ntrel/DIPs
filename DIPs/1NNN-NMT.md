@@ -200,8 +200,8 @@ void f(int i) {
 It is an error to use `[elements, ...]` initializer syntax when:
 
 - the declaration is not a static array
-- there are no missing elements
 - an initializer element has an index specified e.g. `2: expr`
+- `...` is not part of an array initializer (e.g. `int[4] a = 1 ~ [2,...];`)
 
 The new syntax should be supported in the default edition too - it does not break
 existing code. It also enables support for missing elements in dynamically initialized
